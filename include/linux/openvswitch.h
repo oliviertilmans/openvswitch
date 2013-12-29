@@ -139,7 +139,10 @@ struct ovs_vport_stats {
 #define OVS_DP_F_UNALIGNED	(1 << 0)
 
 /* Fixed logical ports. */
+#define OVSP_MAX        (4294967295U)
 #define OVSP_LOCAL      ((__u32)0)
+#define OVSP_NONE       ((__u32)OVSP_MAX)
+#define OVSP_NORMAL     ((__u32)OVSP_MAX-1)
 
 /* Packet transfer. */
 

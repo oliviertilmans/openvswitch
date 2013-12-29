@@ -706,6 +706,15 @@ ofproto_set_max_idle(unsigned max_idle)
     ofproto_max_idle = max_idle;
 }
 
+/* Chooses between OVS learning switch or native kernel based
+ * behavior for the OFPP_NORMAL action.
+ */
+void
+ofproto_set_port_normal_mode(struct ofproto *p, enum ofproto_port_normal_mode port_normal_mode)
+{
+    p->port_normal_mode = port_normal_mode;
+}
+
 /* If forward_bpdu is true, the NORMAL action will forward frames with
  * reserved (e.g. STP) destination Ethernet addresses. if forward_bpdu is false,
  * the NORMAL action will drop these frames. */

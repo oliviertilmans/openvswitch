@@ -134,6 +134,12 @@ enum ofproto_band {
     OFPROTO_OUT_OF_BAND         /* Out-of-band connection to controller. */
 };
 
+/* Behavior for OFPP_NORMAL */
+enum ofproto_port_normal_mode {
+    OFPROTO_PORT_NORMAL_MODE_OVS,   /* OVS' learning switch default */
+    OFPROTO_PORT_NORMAL_MODE_KERNEL /* Pass packet back to the kernel */
+};
+
 struct ofproto_controller {
     char *target;               /* e.g. "tcp:127.0.0.1" */
     int max_backoff;            /* Maximum reconnection backoff, in seconds. */
@@ -238,6 +244,8 @@ void ofproto_set_extra_in_band_remotes(struct ofproto *,
 void ofproto_set_in_band_queue(struct ofproto *, int queue_id);
 void ofproto_set_flow_limit(unsigned limit);
 void ofproto_set_max_idle(unsigned max_idle);
+void ofproto_set_flow_miss_model(unsigned model);
+void ofproto_set_port_normal_mode(struct ofproto *, enum ofproto_port_normal_mode port_normal_mode);
 void ofproto_set_forward_bpdu(struct ofproto *, bool forward_bpdu);
 void ofproto_set_mac_table_config(struct ofproto *, unsigned idle_time,
                                   size_t max_entries);

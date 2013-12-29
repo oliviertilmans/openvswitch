@@ -66,8 +66,9 @@ enum slow_path_reason {
 
 const char *slow_path_reason_to_explanation(enum slow_path_reason);
 
-#define ODPP_LOCAL ODP_PORT_C(OVSP_LOCAL)
-#define ODPP_NONE  ODP_PORT_C(UINT32_MAX)
+#define ODPP_LOCAL  ODP_PORT_C(OVSP_LOCAL)
+#define ODPP_NONE   ODP_PORT_C(OVSP_NONE)
+#define ODPP_NORMAL ODP_PORT_C(OVSP_NORMAL)
 
 void format_odp_actions(struct ds *, const struct nlattr *odp_actions,
                         size_t actions_len);

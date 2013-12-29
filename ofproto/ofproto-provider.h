@@ -71,6 +71,7 @@ struct ofproto {
     uint64_t datapath_id;       /* Datapath ID. */
     bool forward_bpdu;          /* Option to allow forwarding of BPDU frames
                                  * when NORMAL action is invoked. */
+    enum ofproto_port_normal_mode port_normal_mode;       /* OVS or Kernel handles OFPP_NORMAL. */
     char *mfr_desc;             /* Manufacturer (NULL for default)b. */
     char *hw_desc;              /* Hardware (NULL for default). */
     char *sw_desc;              /* Software version (NULL for default). */

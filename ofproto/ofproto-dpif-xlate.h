@@ -73,6 +73,11 @@ struct xlate_in {
      * not if we are just revalidating. */
     bool may_learn;
 
+    /* The model OFPP_NORMAL is treated with. If true then we use Kernel
+     * processing. If false then we use the OVS learning switch model.
+     */
+    bool normal_uses_kernel;
+
     /* If the caller of xlate_actions() doesn't need the flow_wildcards
      * contained in struct xlate_out.  'skip_wildcards' can be set to true
      * disabling the expensive wildcard computation.  When true, 'wc' in struct

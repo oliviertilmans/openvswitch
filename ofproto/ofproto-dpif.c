@@ -327,6 +327,13 @@ size_t
 ofproto_dpif_get_max_mpls_depth(const struct ofproto_dpif *ofproto)
 {
     return ofproto->backer->max_mpls_depth;
+
+/* Extract the pointer to an ofproto from an ofproto-dpif. */
+struct ofproto *
+ofproto_dpif_uncast(struct ofproto_dpif *ofproto)
+{
+    ovs_assert(ofproto->up.ofproto_class == &ofproto_dpif_class);
+    return &(ofproto->up);
 }
 
 static struct ofport_dpif *get_ofp_port(const struct ofproto_dpif *ofproto,

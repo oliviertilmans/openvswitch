@@ -405,6 +405,34 @@ static int do_output(struct datapath *dp, struct sk_buff *skb, int out_port)
 	return 0;
 }
 
+static int do_insert(struct datapath *dp, struct sk_buff *skb)
+{
+	struct vport *vport;
+	int error = 0;
+
+	if (unlikely(!skb))
+		return -ENOMEM;
+
+	if (likely(OVS_CB(skb)->pkt_from_kernel)) {
+		/* Since we got this packet from the kernel
+		 * we can simply set a flag to return it to
+		 * the kernel. */
+		OVS_CB(skb)->return_pkt_to_kernel = true;
+	} else {
+		/* We got this packet from userspace so we
+		 * need to insert this into the network input
+		 * queue. */
+		vport = ovs_vport_rcu(dp, OVS_CB(skb)->flow->key.phy.in_port);
+		if (unlikely(!vport)) {
+			kfree_skb(skb);
+			return -ENODEV;
+		}
+
+		error = ovs_vport_insert(vport, skb_clone(skb, GFP_ATOMIC));
+	}
+	return error;
+}
+
 static int output_userspace(struct datapath *dp, struct sk_buff *skb,
 			    const struct nlattr *attr)
 {
@@ -514,7 +542,7 @@ static int do_execute_actions(struct datapath *dp, struct sk_buff *skb,
 	 * case is just a single output action, so that doing a clone and
 	 * then freeing the original skbuff is wasteful.  So the following code
 	 * is slightly obscure just to avoid that. */
-	int prev_port = -1;
+	u32 prev_port = OVSP_NONE;
 	const struct nlattr *a;
 	int rem;
 
@@ -522,14 +550,30 @@ static int do_execute_actions(struct datapath *dp, struct sk_buff *skb,
 	     a = nla_next(a, &rem)) {
 		int err = 0;
 
-		if (prev_port != -1) {
+		if (prev_port != OVSP_NONE) {
 			do_output(dp, skb_clone(skb, GFP_ATOMIC), prev_port);
-			prev_port = -1;
+			prev_port = OVSP_NONE;
 		}
 
 		switch (nla_type(a)) {
 		case OVS_ACTION_ATTR_OUTPUT:
 			prev_port = nla_get_u32(a);
+			if(unlikely(prev_port > DP_MAX_PORTS)) {
+				switch(prev_port) {
+				case OVSP_NORMAL:
+					do_insert(dp, skb);
+					/* If we need to return the packet to the kernel,
+					 * keep the skb for it. */
+					if (OVS_CB(skb)->return_pkt_to_kernel)
+						keep_skb = true;
+					break;
+
+				default:
+					err = -EINVAL;
+					break;
+				}
+				prev_port = OVSP_NONE;
+			}
 			break;
 
 		case OVS_ACTION_ATTR_USERSPACE:
@@ -552,6 +596,10 @@ static int do_execute_actions(struct datapath *dp, struct sk_buff *skb,
 
 		case OVS_ACTION_ATTR_SAMPLE:
 			err = sample(dp, skb, a);
+			/* If a sampled output action has us use OVSP_NORMAL,
+			 * we need to keep the skb around. */
+			if (OVS_CB(skb)->return_pkt_to_kernel)
+				keep_skb = true;
 			break;
 		}
 
@@ -561,7 +609,7 @@ static int do_execute_actions(struct datapath *dp, struct sk_buff *skb,
 		}
 	}
 
-	if (prev_port != -1) {
+	if (prev_port != OVSP_NONE) {
 		if (keep_skb)
 			skb = skb_clone(skb, GFP_ATOMIC);
 

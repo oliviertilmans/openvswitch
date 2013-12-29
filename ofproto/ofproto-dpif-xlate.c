@@ -1430,6 +1430,13 @@ xlate_normal(struct xlate_ctx *ctx)
         return;
     }
 
+    /* Are we using the OVS or the kernel 'normal' mode? */
+    if(ctx->xin->normal_uses_kernel) {
+        ctx->xout->nf_output_iface = NF_OUT_MULTI;
+        compose_output_action(ctx, OFPP_NORMAL);
+        return;
+    }
+
     /* Learn source MAC. */
     if (ctx->xin->may_learn) {
         update_learning_table(ctx->xbridge, flow, wc, vlan, in_xbundle);
@@ -1693,6 +1700,23 @@ compose_output_action__(struct xlate_ctx *ctx, ofp_port_t ofp_port,
     /* If 'struct flow' gets additional metadata, we'll need to zero it out
      * before traversing a patch port. */
     BUILD_ASSERT_DECL(FLOW_WC_SEQ == 24);
+
+    /* If we get this far and the output port is OFPP_NORMAL then
+     * we want to direct the packet back to the kernel. This can
+     * probably be done more gracefully, but for now just send the
+     * message to the datapath.  */
+    if (ofp_port == OFPP_NORMAL) {
+        ctx->xout->slow |= commit_odp_actions(flow, &ctx->base_flow,
+                                              &ctx->xout->odp_actions,
+                                              &ctx->xout->wc,
+                                              &ctx->mpls_depth_delta);
+        nl_msg_put_odp_port(&ctx->xout->odp_actions, OVS_ACTION_ATTR_OUTPUT,
+                           ODPP_NORMAL);
+        ctx->sflow_odp_port = ODPP_NORMAL;
+        ctx->sflow_n_outputs++;
+        ctx->xout->nf_output_iface = ofp_port;
+        return;
+    }
 
     if (!xport) {
         xlate_report(ctx, "Nonexistent output port");
@@ -2527,6 +2551,13 @@ xlate_action_set(struct xlate_ctx *ctx)
 }
 
 static void
+xlate_back_to_kernel_action(struct xlate_ctx *ctx)
+{
+    compose_output_action(ctx, OFPP_NORMAL);
+    ctx->xout->nf_output_iface = NF_OUT_MULTI;
+}
+
+static void
 do_xlate_actions(const struct ofpact *ofpacts, size_t ofpacts_len,
                  struct xlate_ctx *ctx)
 {
@@ -2805,6 +2836,10 @@ do_xlate_actions(const struct ofpact *ofpacts, size_t ofpacts_len,
         case OFPACT_SAMPLE:
             xlate_sample_action(ctx, ofpact_get_SAMPLE(a));
             break;
+
+        case OFPACT_BACK_TO_KERNEL:
+            xlate_back_to_kernel_action(ctx);
+            break;
         }
     }
 }
@@ -2814,6 +2849,7 @@ xlate_in_init(struct xlate_in *xin, struct ofproto_dpif *ofproto,
               const struct flow *flow, struct rule_dpif *rule,
               uint16_t tcp_flags, const struct ofpbuf *packet)
 {
+    struct ofproto *ofproto_ = ofproto_dpif_uncast(ofproto);
     xin->ofproto = ofproto;
     xin->flow = *flow;
     xin->packet = packet;
@@ -2826,6 +2862,7 @@ xlate_in_init(struct xlate_in *xin, struct ofproto_dpif *ofproto,
     xin->report_hook = NULL;
     xin->resubmit_stats = NULL;
     xin->skip_wildcards = false;
+    xin->normal_uses_kernel = (ofproto_->port_normal_mode == OFPROTO_PORT_NORMAL_MODE_KERNEL);
 }
 
 void

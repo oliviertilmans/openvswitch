@@ -569,6 +569,16 @@
         connection with a controller.  A default value of
         <code>OpenFlow10</code> will be used if this column is empty.
       </column>
+
+      <column name="port_normal_mode">
+        Behavior when handling a flow whose destination action port is
+        OFPP_NORMAL. Default Open vSwitch behavior, or when this value
+        is <code>ovs</code>, is to act like a learning layer 2 switch.
+        When this value is <code>kernel</code> then matching flows are
+        handed back to the kernel as though Open vSwitch never saw them,
+        allowing normal layer 3 processing by the kernel. This latter
+        behavior might be described as Hybrid mode.
+      </column>
     </group>
 
     <group title="Spanning Tree Configuration">

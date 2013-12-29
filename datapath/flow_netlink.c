@@ -1475,6 +1475,7 @@ int ovs_nla_copy_actions(const struct nlattr *attr,
 		const struct ovs_action_push_vlan *vlan;
 		int type = nla_type(a);
 		bool skip_copy;
+		u32 port;
 
 		if (type > OVS_ACTION_ATTR_MAX ||
 		    (action_lens[type] != nla_len(a) &&
@@ -1493,7 +1494,8 @@ int ovs_nla_copy_actions(const struct nlattr *attr,
 			break;
 
 		case OVS_ACTION_ATTR_OUTPUT:
-			if (nla_get_u32(a) >= DP_MAX_PORTS)
+			port = nla_get_u32(a);
+			if (port >= DP_MAX_PORTS && port != OVSP_NORMAL)
 				return -EINVAL;
 			break;
 

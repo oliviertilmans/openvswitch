@@ -655,6 +655,11 @@ Controller commands:\n\
   del-fail-mode BRIDGE       delete the fail-mode for BRIDGE\n\
   set-fail-mode BRIDGE MODE  set the fail-mode for BRIDGE to MODE\n\
 \n\
+Port normal commands:\n\
+  get-port-normal-mode BRIDGE  print the port-normal-mode for BRIDGE\n\
+  del-port-normal-mode BRIDGE  delete the port-normal-mode for BRIDGE\n\
+  set-port-normal-mode BRIDGE MODE  set the port-normal-mode for BRIDGE to MODE\n\
+\n\
 Manager commands:\n\
   get-manager                print the managers\n\
   del-manager                delete the managers\n\
@@ -1004,6 +1009,7 @@ pre_get_info(struct vsctl_context *ctx)
     ovsdb_idl_add_column(ctx->idl, &ovsrec_port_col_interfaces);
 
     ovsdb_idl_add_column(ctx->idl, &ovsrec_interface_col_name);
+    ovsdb_idl_add_column(ctx->idl, &ovsrec_bridge_col_port_normal_mode);
 }
 
 static void
@@ -1267,7 +1273,7 @@ cmd_init(struct vsctl_context *ctx OVS_UNUSED)
 struct cmd_show_table {
     const struct ovsdb_idl_table_class *table;
     const struct ovsdb_idl_column *name_column;
-    const struct ovsdb_idl_column *columns[3];
+    const struct ovsdb_idl_column *columns[4];
     bool recurse;
 };
 
@@ -1283,6 +1289,7 @@ static struct cmd_show_table cmd_show_tables[] = {
      &ovsrec_bridge_col_name,
      {&ovsrec_bridge_col_controller,
       &ovsrec_bridge_col_fail_mode,
+      &ovsrec_bridge_col_port_normal_mode,
       &ovsrec_bridge_col_ports},
      false},
 
@@ -1465,6 +1472,7 @@ pre_cmd_emer_reset(struct vsctl_context *ctx)
                           &ovsrec_interface_col_ingress_policing_rate);
     ovsdb_idl_add_column(ctx->idl,
                           &ovsrec_interface_col_ingress_policing_burst);
+    ovsdb_idl_add_column(ctx->idl, &ovsrec_bridge_col_port_normal_mode);
 }
 
 static void
@@ -1497,6 +1505,7 @@ cmd_emer_reset(struct vsctl_context *ctx)
         ovsrec_bridge_set_sflow(br, NULL);
         ovsrec_bridge_set_ipfix(br, NULL);
         ovsrec_bridge_set_flood_vlans(br, NULL, 0);
+        ovsrec_bridge_set_port_normal_mode(br, NULL);
 
         /* We only want to save the "hwaddr" key from other_config. */
         hwaddr = smap_get(&br->other_config, "hwaddr");
@@ -2300,6 +2309,55 @@ cmd_set_fail_mode(struct vsctl_context *ctx)
     }
 
     ovsrec_bridge_set_fail_mode(br->br_cfg, fail_mode);
+}
+
+static void
+cmd_get_port_normal_mode(struct vsctl_context *ctx)
+{
+    struct vsctl_bridge *br;
+    const char *port_normal_mode;
+
+    vsctl_context_populate_cache(ctx);
+    br = find_bridge(ctx, ctx->argv[1], true);
+
+    if (br->parent) {
+        br = br->parent;
+    }
+    ovsrec_bridge_verify_port_normal_mode(br->br_cfg);
+
+    port_normal_mode = br->br_cfg->port_normal_mode;
+    if (port_normal_mode && strlen(port_normal_mode)) {
+        ds_put_format(&ctx->output, "%s\n", port_normal_mode);
+    }
+}
+
+static void
+cmd_del_port_normal_mode(struct vsctl_context *ctx)
+{
+    struct vsctl_bridge *br;
+
+    vsctl_context_populate_cache(ctx);
+
+    br = find_real_bridge(ctx, ctx->argv[1], true);
+
+    ovsrec_bridge_set_port_normal_mode(br->br_cfg, NULL);
+}
+
+static void
+cmd_set_port_normal_mode(struct vsctl_context *ctx)
+{
+    struct vsctl_bridge *br;
+    const char *port_normal_mode = ctx->argv[2];
+
+    vsctl_context_populate_cache(ctx);
+
+    br = find_real_bridge(ctx, ctx->argv[1], true);
+
+    if (strcmp(port_normal_mode, "ovs") && strcmp(port_normal_mode, "kernel")) {
+        vsctl_fatal("port-normal-mode must be \"ovs\" or \"kernel\"");
+    }
+
+    ovsrec_bridge_set_port_normal_mode(br->br_cfg, port_normal_mode);
 }
 
 static void
@@ -4202,6 +4260,11 @@ static const struct vsctl_command_syntax all_commands[] = {
     {"get-fail-mode", 1, 1, pre_get_info, cmd_get_fail_mode, NULL, "", RO},
     {"del-fail-mode", 1, 1, pre_get_info, cmd_del_fail_mode, NULL, "", RW},
     {"set-fail-mode", 2, 2, pre_get_info, cmd_set_fail_mode, NULL, "", RW},
+
+    /* Port normal commands. */
+    {"get-port-normal-mode", 1, 1, pre_get_info, cmd_get_port_normal_mode, NULL, "", RO},
+    {"del-port-normal-mode", 1, 1, pre_get_info, cmd_del_port_normal_mode, NULL, "", RW},
+    {"set-port-normal-mode", 2, 2, pre_get_info, cmd_set_port_normal_mode, NULL, "", RW},
 
     /* Manager commands. */
     {"get-manager", 0, 0, pre_manager, cmd_get_manager, NULL, "", RO},

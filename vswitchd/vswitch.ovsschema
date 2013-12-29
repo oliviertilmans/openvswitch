@@ -1,6 +1,6 @@
 {"name": "Open_vSwitch",
- "version": "7.4.0",
- "cksum": "951746691 20389",
+ "version": "7.4.1",
+ "cksum": "1796841126 20564",
  "tables": {
    "Open_vSwitch": {
      "columns": {
@@ -107,7 +107,12 @@
                           "maxInteger": 254},
                   "value": {"type": "uuid",
                             "refTable": "Flow_Table"},
-                  "min": 0, "max": "unlimited"}}},
+                  "min": 0, "max": "unlimited"}},
+       "port_normal_mode": {
+         "type": {"key": {"type": "string",
+           "enum": ["set", ["ovs",
+                            "kernel"]]},
+	   "min": 0, "max": 1}}},
      "indexes": [["name"]]},
    "Port": {
      "columns": {

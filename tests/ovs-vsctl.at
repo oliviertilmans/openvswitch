@@ -643,6 +643,7 @@ mirrors             : []
 name                : "br0"
 netflow             : []
 other_config        : {}
+port_normal_mode    : []
 ports               : []
 protocols           : []
 sflow               : []
@@ -1135,6 +1136,7 @@ mirrors             : []
 name                : "br0"
 netflow             : []
 other_config        : {}
+port_normal_mode    : []
 ports               : []
 protocols           : []
 sflow               : []

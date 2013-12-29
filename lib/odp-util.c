@@ -400,8 +400,17 @@ format_odp_action(struct ds *ds, const struct nlattr *a)
     }
 
     switch (type) {
-    case OVS_ACTION_ATTR_OUTPUT:
-        ds_put_format(ds, "%"PRIu32, nl_attr_get_u32(a));
+    case OVS_ACTION_ATTR_OUTPUT: {
+            uint32_t port = nl_attr_get_u32(a);
+            switch (port) {
+            case OVSP_NORMAL:
+                ds_put_format(ds, "output(normal)");
+                break;
+            default:
+                ds_put_format(ds, "%"PRIu32, port);
+                break;
+            }
+        }
         break;
     case OVS_ACTION_ATTR_USERSPACE:
         format_odp_userspace_action(ds, a);
@@ -488,6 +497,14 @@ parse_odp_action(const char *s, const struct simap *port_names,
         if (ovs_scan(s, "%"SCNi32"%n", &port, &n)) {
             nl_msg_put_u32(actions, OVS_ACTION_ATTR_OUTPUT, port);
             return n;
+        }
+    }
+
+    {
+        int len = strcspn(s, delimiters);
+        if (strncmp(s, "output(normal)", len) == 0) {
+            nl_msg_put_u32(actions, OVS_ACTION_ATTR_OUTPUT, OVSP_NORMAL);
+            return len;
         }
     }
 

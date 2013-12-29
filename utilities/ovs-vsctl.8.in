@@ -391,6 +391,32 @@ Deletes the configured failure mode.
 .IP "\fBset\-fail\-mode\fR \fIbridge\fR \fBstandalone\fR|\fBsecure\fR"
 Sets the configured failure mode.
 .
+.SS "Port Normal Mode"
+.PP
+Flow actions can include output to a port called \fBnormal\fR.  By default
+Open vSwitch implements a learning layer 2 switch for packets that are
+output using it.  Bridges can be switched to another mode which, on Linux
+kernels since 2.6.39, will return packets that use the \fBnormal\fR
+action to the kernel as though unseen by Open vSwitch. 
+.PP
+Why is this useful?  This allows standard Linux packet processing to
+take over, particularly handling of local IP addresses but also including
+IP routing and firewalling.
+.PP
+This makes it possible to, for example, run
+routing procotol software directly attached to the external ports for
+low-level route distribution and a flow-based layer on top of this. This
+would be an example of hybrid mode with OpenFlow.
+.
+.IP "\fBget\-port\-normal\-mode\fR \fIbridge\fR"
+Prints the configured port normal mode.
+.
+.IP "\fBdel\-port\-normal\-mode\fR \fIbridge\fR"
+Deletes the configured port normal mode.
+.
+.IP "\fBset\-port\-normal\-mode\fR \fIbridge\fR \fBovs\fR|\fBkernel\fR"
+Sets the configured port normal mode.
+.
 .SS "Manager Connectivity"
 .
 These commands manipulate the \fBmanager_options\fR column in the

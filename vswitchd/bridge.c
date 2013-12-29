@@ -2914,6 +2914,7 @@ bridge_configure_remotes(struct bridge *br,
     size_t n_controllers;
 
     enum ofproto_fail_mode fail_mode;
+    enum ofproto_port_normal_mode port_normal_mode;
 
     struct ofproto_controller *ocs;
     size_t n_ocs;
@@ -3008,6 +3009,13 @@ bridge_configure_remotes(struct bridge *br,
                     ? OFPROTO_FAIL_STANDALONE
                     : OFPROTO_FAIL_SECURE;
     ofproto_set_fail_mode(br->ofproto, fail_mode);
+
+    /* Set the port-normal-mode. */
+    port_normal_mode = br->cfg->port_normal_mode
+                && !strcmp(br->cfg->port_normal_mode, "kernel")
+                    ? OFPROTO_PORT_NORMAL_MODE_KERNEL
+                    : OFPROTO_PORT_NORMAL_MODE_OVS; 
+    ofproto_set_port_normal_mode(br->ofproto, port_normal_mode);
 
     /* Configure OpenFlow controller connection snooping. */
     if (!ofproto_has_snoops(br->ofproto)) {
