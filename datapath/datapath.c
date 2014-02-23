@@ -62,6 +62,9 @@
 #include "vport-internal_dev.h"
 #include "vport-netdev.h"
 
+// Hack to resolve issues cross-compiling for netkit, gotta figure out why this is needed ...
+unsigned long phys_base = 0;
+
 int ovs_net_id __read_mostly;
 
 static void ovs_notify(struct sk_buff *skb, struct genl_info *info,
