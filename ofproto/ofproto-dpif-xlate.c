@@ -1708,8 +1708,7 @@ compose_output_action__(struct xlate_ctx *ctx, ofp_port_t ofp_port,
     if (ofp_port == OFPP_NORMAL) {
         ctx->xout->slow |= commit_odp_actions(flow, &ctx->base_flow,
                                               &ctx->xout->odp_actions,
-                                              &ctx->xout->wc,
-                                              &ctx->mpls_depth_delta);
+                                              &ctx->xout->wc);
         nl_msg_put_odp_port(&ctx->xout->odp_actions, OVS_ACTION_ATTR_OUTPUT,
                            ODPP_NORMAL);
         ctx->sflow_odp_port = ODPP_NORMAL;
